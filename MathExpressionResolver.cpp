@@ -1,244 +1,331 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <cstdint> // for things like uint32_t
+#include <inttypes.h>
 
-enum class TOKENS {
-	NUMBER = 0,
-	ADD,
-	SUB,
-	MUL,
-	DIV,
-	POW,
+enum class TokenTypes {
+	OP_ADD = 0,
+	OP_SUB,
+	OP_MUL,
+	OP_DIV,
+	OP_POW,
+
+
+	NUMBER,
+	PARENT_CLOSING,
+	PARENT_OPENING
+
 };
 
-// printing a token
-std::ostream& operator<< (std::ostream& stream, TOKENS t) {
-	switch (t) {
-		case TOKENS::NUMBER:
-			stream << "number" ;
-			return stream;
-		case TOKENS::ADD:
-			stream << "addition symbol";
-			return stream;
-		case TOKENS::SUB:
-			stream << "subtraction symbol";
-			return stream;
-		case TOKENS::MUL:
-			stream << "multiplication symbol";
-			return stream;
-		case TOKENS::DIV:
-			stream << "divide symbol";
-			return stream;
-	}
-	return stream;
-}
 
-// the struct for holding the token information
-struct tokenHolder {
-public:
-	TOKENS token;
-	bool isOperator;
-	int32_t num;		// will only be used if token == TOKENS::NUMBER
-	tokenHolder (TOKENS t, bool isOperator=true, uint32_t n=0 ){
-		token = t;
-		num = n;
-		this->isOperator = isOperator;
+struct token {
+
+	TokenTypes type;
+	int32_t value; // if type is number , the number is stored here
+	uint8_t priority;
+	token (TokenTypes type , uint8_t p , int32_t value=0) {
+		this->type = type;
+		this->priority = p;
+		this->value = value;
+	}
+};
+struct AST_Node;
+struct AST_Node {
+	int64_t value;
+	TokenTypes type;
+
+	AST_Node* left;
+	AST_Node* right;
+
+	AST_Node () {
+		left = nullptr;
+		right = nullptr;
 	}
 };
 
-int getParenthesesClosingPosition ();
-int getNumber(const std::string&, uint16_t&);			// gets a number
-std::vector<tokenHolder> tokenizer (const std::string&);	// takes a string and returns a array of token holders
-uint64_t resolve (std::vector<tokenHolder>&);			// resolves a array of token holders to a number
+std::ostream& operator << ( std::ostream& , TokenTypes ); // prints a token example : {OP_ADD} -> add operator
+std::string  TokenTypeToSrc (TokenTypes); // takes a token type and returns a string holfing its mathematcal representation examble : {OP_ADD} -> "+"
+std::ostream& operator << ( std::ostream& , const token&  ); // prints a token in the format of tokenType : value
+void printTabs (uint8_t num);
+void printAST(AST_Node* , uint8_t=0);
 
-int main (int argc, char** argv) {
-	std::string expr = "5+6*3";
-	if (argc > 1)		// if we have more than 1 argument given: resolve it
-		expr = argv[1];
-	std::vector<tokenHolder> temp = tokenizer (expr);
-	std::cout << "expression is " << expr << "\n";
-	for (tokenHolder& th : temp) {
-		std::cout << th.token << " : " << th.num << "\n";
-	}
-	std::cout << " = " << (long long)resolve (temp) << "\n";
+int32_t getNumber (const std::string&, uint16_t*);
+std::vector<token> lexer ( const std::string& ); // turns a mathematical expression into its tokens
+uint16_t getParentClosingIndex (std::vector<token>& , uint16_t);// takes the index of a parentheses start and gets its closing part
+
+AST_Node* TokensToAST (const std::vector<token>& , uint16_t=1);// takes the tokens and turns them into a abstact syntax tree
+AST_Node* buildAST (const std::vector<token>&);
+
+int64_t resolve ( AST_Node* ); // takes the tokens and calculatets its result
+
+int main () {
+
+	std::string expr = " 5+6*(1+1)^2 ";
+	expr = "5+2*6/3"; // something simpler
+	expr = "5+7-8+1";
+	std::cout << expr << "\n";
+	std::vector<token> tokens = lexer (expr);
+	for (const token& t : tokens)
+		std::cout << t << "\n";
+	std::cout << "\n---\n\n";
+
+	AST_Node* root = buildAST(tokens);
+	printAST (root);
+	//std::cout << (*root) << "\n";
+
+	std::cout << "result = " << resolve(root) << "\n";
+
 	return 0;
 }
 
-
-int getNumber (const std::string& expr, uint16_t& location) {
-	std::string num;
-	while ( isdigit(expr.at(location)) ) {
-		num += expr.at(location);	// add the digit to the digit string
-		location++;			
-		if (location >= expr.size()) 	// if location is at the end of the string break from the loop
+// printing functions
+std::ostream& operator << ( std::ostream& stream , TokenTypes type ) {
+	
+	switch ( type ) {
+		case TokenTypes::OP_ADD:
+			stream << "addition operator";
+			break;
+		case TokenTypes::OP_SUB:
+			stream << "subtraction operator";
+			break;
+		case TokenTypes::OP_MUL:
+			stream << "multiplication operator";
+			break;
+		case TokenTypes::OP_DIV:
+			stream << "division operator";
+			break;
+		case TokenTypes::OP_POW:
+			stream << "power operator";
+			break;
+		case TokenTypes::NUMBER:
+			stream << "number type";
+			break;
+		case TokenTypes::PARENT_OPENING:
+			stream << "opening parentheses";
+			break;
+		case TokenTypes::PARENT_CLOSING:
+			stream << "closing parentheses";
 			break;
 	}
-	return std::atoi(num.c_str());
+
+	return stream;
+} 
+
+std::string  TokenTypeToSrc (TokenTypes type) {
+	std::string result;
+
+
+	switch ( type ) {
+		case TokenTypes::OP_ADD:
+			result = "+";
+			break;
+		case TokenTypes::OP_SUB:
+			result = "-";
+			break;
+		case TokenTypes::OP_MUL:
+			result = "*";
+			break;
+		case TokenTypes::OP_DIV:
+			result = "/";
+			break;
+		case TokenTypes::OP_POW:
+			result = "^";
+			break;
+		case TokenTypes::NUMBER:
+			result = " NUM ";
+			break;
+		case TokenTypes::PARENT_OPENING:
+			result = "(";
+			break;
+		case TokenTypes::PARENT_CLOSING:
+			result = ")";
+			break;
+	
+	}
+	return result;
 }
 
-std::vector<tokenHolder> tokenizer (const std::string& expr) { 
-	uint16_t location = 0;// the char location in the string
-	std::vector<tokenHolder> tokens;
-	bool LastIsOperator = false;
-	while (location < expr.size()) {
-		if (expr.at(location) >= '0' && expr.at(location) <= '9' ){	// if the character is a digit get that digit
-			tokens.push_back(
-				tokenHolder(
-					TOKENS::NUMBER,			// set the token
-					false,				// it is not a operator
-					getNumber (expr, location)	// get the number , getNumber modifies the location so no need to do that here
-					    )
-					);
-			LastIsOperator = false;				// this token is not a operator
-			continue;
-		}
+std::ostream& operator  << ( std::ostream& stream , const token& token) {
+	stream << token.type << " , v: " << token.value << " , p: " << (short)token.priority;
+	return stream;
+}
 
-		// get negative number
-		// if the last token is a operator and this one is a minus do this and the next char is a digit; 
-		// if yes get that number and multiplie it by -1
-		if (LastIsOperator && expr.at(location) == '-' && isdigit(expr.at(location+1))  ) {
-			location++; 				// cant do getNumber(expr,location+1) because that would be a ivalue referenz
-			int num = getNumber (expr, location);
-			num *= -1;
-			tokens.push_back( tokenHolder(TOKENS::NUMBER,false, num ) );
-			continue;
-		}
+void printTabs (uint8_t num) {
+	for (int i = 0;i < num;i++)
+		std::cout << "\t";
+}
+void printAST(AST_Node* node , uint8_t level) {
+	if (node == nullptr){
+		printTabs ( level );
+		std::cout << "---<empty>---\n";
+		return;
+	}else {
+		printTabs (level);
+		std::cout << "type: " << node->type << "\n";
+		printTabs (level);
+		std::cout << "value: " << node->value << "\n";
+	}
 
-		switch (expr.at(location)) {
+	if (node->type == TokenTypes::NUMBER)
+		return;
+	printTabs ( level );
+	std::cout << "left\n";
+	printAST ( node->left , level+1 );
+	printTabs( level );
+	std::cout << "right\n";
+	printAST ( node->right , level+1 );
+
+}
+
+int32_t getNumber (const std::string& expr, uint16_t* index) {
+	std::string num;// will hold the number
+
+	while ( isdigit (expr.at(*index)) ) {
+		num += expr.at(*index);
+		++(*index);
+		// bounds checking
+		if ( (*index) >= expr.size() )
+			break;
+	} 
+	//--(*index);
+	return std::stoi (num);
+}
+
+
+std::vector<token> lexer ( const std::string& expr ) {
+	std::vector <token> tokens;
+	for ( uint16_t i = 0;i < expr.size();++i ) {
+		
+		if ( isdigit (expr.at(i))  ){
+			tokens.push_back ( token (TokenTypes::NUMBER,0, getNumber(expr, &i) ) );
+			//continue;
+			if ( i >= expr.size() )
+				break;
+		}		
+		
+		// the char is not a digit
+		switch (expr.at(i) ) {
 			case '+' :
-				tokens.push_back( tokenHolder(TOKENS::ADD) );
+				tokens.push_back ( token(TokenTypes::OP_ADD , 1) );
 				break;
 			case '-' :
-				tokens.push_back( tokenHolder(TOKENS::SUB) );
+				tokens.push_back ( token(TokenTypes::OP_SUB , 1) );
 				break;
 			case '*' :
-				tokens.push_back( tokenHolder(TOKENS::MUL) );
+				tokens.push_back ( token(TokenTypes::OP_MUL , 2) );
 				break;
 			case '/' :
-				tokens.push_back( tokenHolder(TOKENS::DIV) );
+				tokens.push_back ( token(TokenTypes::OP_DIV , 2) );
 				break;
 			case '^' :
-				tokens.push_back ( tokenHolder (TOKENS::POW) );
+				tokens.push_back ( token(TokenTypes::OP_POW , 3) );
 				break;
-			default:
-				std::cout << "[WARNING] illegal character detected: " << expr.at(location) << " at index " << location << "\n";
+			case '(' :
+				tokens.push_back ( token(TokenTypes::PARENT_OPENING , 4) );
 				break;
-		}
-		LastIsOperator = true;
-		location++;
+			case ')' :
+				tokens.push_back ( token(TokenTypes::PARENT_CLOSING , 4) );
+				break;
+		} 
 	}
-	// if the last token is a operator a error is there
-	// before that check if tokens is bigger than 0
-	if (tokens.size() == 0){
-		std::cout << "Invalid expression \" " << expr << " \" no tokene detected\n";
-		exit(1);
-	}
-	if ( tokens.at(tokens.size()-1).isOperator ){
-		std::cout << "last operator does not have a opearant";
-		exit(1);
-	}
+
 	return tokens;
 }
 
-
-uint64_t resolve (std::vector<tokenHolder>& tokens){
-	std::cout << "\tresolve is not finished \n";
-	if (tokens.at(0).token != TOKENS::NUMBER) {
-		std::cout << "first element is not a number";
-		exit(1);
-	}
-	int64_t result = tokens.at(0).num;
-
-	for (int loc = 1;loc < tokens.size();loc+=2) {
-
-		// check if loc+1 exists
-		if (loc+1 >= tokens.size())
-			break;
-		//check if a next operation is availibale
-		// 5 + 6 * 3
-		// 5 + 6 has a next operation : 6 * 3
-		// 6 * 3 has no next operation
-		if ( !(loc+2 < tokens.size() && tokens.at(loc+2).isOperator) ){
-		
-		}
-
-	}
-
-	return result;
-
-	// old way
-	// look for multiplication and divisions , do them and replace their tokens with new number tokens
-	for (size_t loc = 1;loc < tokens.size();loc+=2) {
-		//check if loc+1 exists
-		if (loc+1 >= tokens.size())
-			break;
-			
-		if (tokens.at(loc).token == TOKENS::MUL || tokens.at(loc).token == TOKENS::DIV ){
-			// mult it
-			uint32_t num = tokens.at(loc-1).num;
-			switch (tokens.at(loc).token) {
-				case TOKENS::MUL:
-					num *= tokens.at(loc+1).num;
-					break;
-				case TOKENS::DIV:
-					num /= tokens.at(loc+1).num;
-					break;
-			}
-
-			// if the expr was 3 * 6 , replace the tokens for 3 * 6 with 18
-			// the 3 is loc-1 , the * is loc , the 6 is loc + 1
-			/*
-			std::cout << "after: " << tokens.at(loc+2).token << " : " << tokens.at(loc+2).num << "\n";
-			std::cout << "changing: " << tokens.at(loc-1).token << " : " << tokens.at(loc-1).num << "\n";
-			std::cout << "deleting: " << tokens.at(loc-0).token << " : " << tokens.at(loc-0).num << "\n";
-			std::cout << "deleting: " << tokens.at(loc+1).token << " : " << tokens.at(loc+1).num << "\n";
-			*/
-			// replace the number with the result and removing the operants
-			tokens.at(loc-1).num = num;
-			tokens.erase(tokens.begin()+loc);
-			tokens.erase(tokens.begin()+loc);
-
-			/*
-			std::cout << "changed expression: \n";
-			for (tokenHolder& th : tokens)
-				std::cout << "\t"  << th.token << " : " << th.num << "\n";
-			*/
-			loc = 1;
-		}
+AST_Node* TokensToAST ( const std::vector<token>& expr , uint16_t index ) {
+	
+	// bounds checking
+	if ( index >= expr.size() ){
+		// \033[31m sets the color to red and \033[0m resets the color
+		std::cout << "\033[31m[ERROR]  index " << index << " out of bounds of expression vector with size " << expr.size() << "\n\033[0m";
+		exit (1);
 	}
 	
+	AST_Node* root = new AST_Node ();
+	
+	// set the basic type of the node
+	root->type  = expr.at(index).type;
+	root->value = expr.at(index).value;
+
+	// a NUMBER node doesnt have to do anything more so just return
+	if (root->type == TokenTypes::NUMBER)
+		return root;
+	
+	// now the node can only be a operator like +,-,*,/ or something like ()
+	// before and after any operator a number must be otherwise its an error , for that
+	// the index has to have 1 index below and up
+	if ( index == 0 && index != expr.size() ) {
+		std::cout << "\033[31m[ERROR]  index " << index << " cant be zero or the last index  when parsing operators\033[0m\n";
+		exit (1);
+	}
+	if ( expr.at(index-1).type != TokenTypes::NUMBER || expr.at(index+1).type != TokenTypes::NUMBER ) {
+		std::cout << "\033[31m [ERROR] before and after an operator only numbers are allowed, expression:\n\033[31m";
+		// print the whole expression with one before and after the operator in red
+		for (int ei = 0;ei < expr.size();++ei)
+			std::cout << ((ei >= index-1 && ei <= index+1) ? "\033[31m" : "\033[0m"  ) << TokenTypeToSrc ( expr.at(ei).type );
+		std::cout << "\n";
+		exit (1);
+	}
+	//
 	// 5 + 6 * 3
+	//  6 * 3
+	// 
 
-	std::cout << "\n-\n";
-	for (const tokenHolder& th : tokens) 
-		std::cout << th.token << " : " << th.num << "\n";
-	std::cout << "\n-\n";
+	root->left  = TokensToAST (expr , index-1);
+	root->right = TokensToAST (expr , index+1);
 
-	uint64_t res = tokens.at(0).num;
-	for (size_t loc = 1;loc < tokens.size();loc+=2) {
-		// check if loc+1 is a valid index
-		if (loc+1 >= tokens.size())
-			break;
-		if ( !(tokens.at(loc).isOperator && tokens.at(loc+1).token == TOKENS::NUMBER) ) {
-			std::cout << "token not right: " << tokens.at(loc).token << " , " << tokens.at(loc+1).token << "\n";
-			exit(1);
-		}
-		switch (tokens.at(loc).token) {
-			case TOKENS::ADD:
-				res += (tokens.at(loc+1).num);
-				break;
-			case TOKENS::SUB:
-				res -= (tokens.at(loc+1).num);
-				break;
-			case TOKENS::MUL:
-				res *= (tokens.at(loc+1).num);
-				break;
-			case TOKENS::DIV:
-				res /= (tokens.at(loc+1).num);
-				break;
+
+	return root;
+}
+
+
+AST_Node* buildAST (const std::vector<token>& expr) {
+	AST_Node* troot = TokensToAST (expr, 1 );
+	AST_Node* root = troot;
+	AST_Node* proot = troot;
+	for (int i = 3;i < expr.size();i+=2) {
+		AST_Node* ret = TokensToAST (expr , i);
+		if ( expr.at(i-2).priority == expr.at(i).priority ) {
+			ret->left = proot->right;
+			printAST (root->left , 1);
+			proot->right = ret;
+			std::cout << "swap\n";
+			//root = ret;
+		}else if (expr.at(i-2).priority < expr.at(i).priority ) {
+			/*AST_Node* prev = root->right;
+			ret->left = root->right;
+			root->right = ret;*/
+			root->right = ret;
+			proot = root;
+			root = ret;
 		}
 	}
-	return res;
 
+	return troot;
+}
+
+
+int64_t resolve (AST_Node* node) {
+	if (node == nullptr) {
+		std::cout << "nullptr node not accepted";
+		exit(1);
+	}
+
+	if ( node->type == TokenTypes::NUMBER ) {
+		return node->value;
+	}
+	
+	int64_t num1 = resolve(node->left);
+	int64_t num2 = resolve(node->right);
+	switch ( node->type ) {
+		case TokenTypes::OP_ADD :
+			return num1 + num2;
+		case TokenTypes::OP_SUB :
+			return num1 - num2;	
+		case TokenTypes::OP_MUL :
+			return num1 * num2;	
+		case TokenTypes::OP_DIV :
+			return num1 / num2;	
+	}
+	return 0;
 }
