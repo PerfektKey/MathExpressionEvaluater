@@ -1,5 +1,6 @@
-CC=g++
+CC=clang++
 
 
 all:
-	$(CC) -o MER MathExpressionResolver.cpp
+	$(CC) -std=c++20 -Wall -o MER MathExpressionSolver.cpp PJsonParser/parser.cpp
+	./MER
