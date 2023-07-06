@@ -65,6 +65,7 @@ namespace PMES {
 		void lex (const std::string&);
 		void lex (); // cant pass default arguments so this
 		void build(); // wrapper for private build
+		int64_t solve (); // 
 		void printTokens ();
 		void printTree ();
 	private:
@@ -72,7 +73,7 @@ namespace PMES {
 		std::string srcString;
 		AST_Node* root;
 	
-
+		int64_t solve (AST_Node*);
 		AST_Node* getOPNum (const token&);
 		AST_Node* build(bool);
 		int64_t getNumber (const std::string& , uint32_t*);

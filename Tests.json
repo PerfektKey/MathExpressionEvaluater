@@ -1,131 +1,26 @@
 [
-    {
-      "expression": "2 + 3",
-      "answer": 5
-    },
-    {
-      "expression": "4 - 1",
-      "answer": 3
-    },
-    {
-      "expression": "5 * 6",
-      "answer": 30
-    },
-    {
-      "expression": "10 / 2",
-      "answer": 5
-    },
-    {
-      "expression": "8 + 2",
-      "answer": 10
-    },
-    {
-      "expression": "9 - 3",
-      "answer": 6
-    },
-    {
-      "expression": "7 * 4",
-      "answer": 28
-    },
-    {
-      "expression": "12 / 3",
-      "answer": 4
-    },
-    {
-      "expression": "6 + 2",
-      "answer": 8
-    },
-    {
-      "expression": "10 - 4",
-      "answer": 6
-    },
-    {
-      "expression": "3 + 5 * 2 - 4",
-      "answer": 9
-    },
-    {
-      "expression": "7 - 2 * 6 + 3",
-      "answer": -2
-    },
-    {
-      "expression": "8 / 4 + 2 * 3",
-      "answer": 8
-    },
-    {
-      "expression": "10 * 2 - 4 + 6 / 2",
-      "answer": 19
-    },
-    {
-      "expression": "5 + 4 * 6 - 2",
-      "answer": 27
-    },
-    {
-      "expression": "9 - 5 * 2 + 3",
-      "answer": 2
-    },
-    {
-      "expression": "4 * 3 + 8 - 2",
-      "answer": 18
-    },
-    {
-      "expression": "12 / 2 + 3 * 4",
-      "answer": 18
-    },
-    {
-      "expression": "6 + 9 - 5 * 2",
-      "answer": 5
-    },
-    {
-      "expression": "3 * 2 + 5 * 8",
-      "answer": 46
-    },
-    {
-      "expression": "2 + 3 * 4 - 5",
-      "answer": 9
-    },
-    {
-      "expression": "1 + 2 * 3 - 4",
-      "answer": 3
-    },
-    {
-      "expression": "5 - 4 * 3 + 2",
-      "answer": -5
-    },
-    {
-      "expression": "6 / 2 + 4 * 3 - 2",
-      "answer": 13
-    },
-    {
-      "expression": "3 * 5 - 2 + 4",
-      "answer": 17
-    },
-    {
-      "expression": "2 * 4 / 8 + 6 - 3",
-      "answer": 4
-    },
-    {
-      "expression": "8 / 2 - 4 * 3 + 1",
-      "answer": -7
-    },
-    {
-      "expression": "3 * 4 + 6 / 2 - 5",
-      "answer": 10
-    },
-    {
-      "expression": "7 - 6 + 5 * 4 - 3",
-      "answer": 18
-    },
-    {
-      "expression": "9 + 8 - 7 * 6 + 5",
-      "answer": -20
-    },
-    {
-      "expression": "2^8-1",
-      "answer": 255
-    },
-    {
-      "expression": "2^4*2+1",
-      "answer": 33
-    }
-    
-  ]  
+	{
+		"expression": "10+2",
+		"answer": 12
+	},
+	{
+		"expression": "10*2",
+		"answer": 20
+	},
+	{
+		"expression": "10/2",
+		"answer": 5
+	},
+	{
+		"expression": "10^2",
+		"answer": 100
+	},
+	{
+		"expression": "5+6*3*2",
+		"answer": 41
+	},
+	{
+		"expression": "2*5-6",
+		"answer": 4
+	}
+]  
