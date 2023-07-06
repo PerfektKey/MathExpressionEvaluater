@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <inttypes.h>
+#include <math.h>
 
 #ifndef  PMES__
 #define  PMES__
@@ -18,7 +19,8 @@ namespace PMES {
 		OP_ADD,
 		OP_SUB,
 		OP_MUL,
-		OP_DIV
+		OP_DIV,
+		OP_POW
 	};
 
 
@@ -62,12 +64,16 @@ namespace PMES {
 	public:
 		Solver (std::string);
 		~Solver();
-		void lex (const std::string&);
+		void lex (std::string);// will change the string so not a const std::string:string&
 		void lex (); // cant pass default arguments so this
 		void build(); // wrapper for private build
 		int64_t solve (); // 
+		int64_t parse (const std::string&); 
 		void printTokens ();
 		void printTree ();
+
+		void clear();
+		//void clearTokens();
 	private:
 		std::vector <token> tokens;
 		std::string srcString;

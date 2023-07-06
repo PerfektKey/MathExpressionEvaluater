@@ -30,6 +30,9 @@ namespace PMES  {
 			case TokenType::OP_DIV:
 				stream << "division operation";
 				break;
+			case TokenType::OP_POW:
+				stream << "power operation";
+				break;
 			
 		
 		}
@@ -98,9 +101,12 @@ namespace PMES  {
 	void Solver::lex () {
 		this->lex (srcString);
 	}
-	void Solver::lex (const std::string& src) {
+	void Solver::lex (std::string src) {
 		uint32_t index = 0;
 		bool lastIsNumber = false;
+		// remove all spaces cause they suck
+		src.erase ( std::remove(src.begin() , src.end() , ' ') , src.end() );
+		
 		while ( index < src.size() ) {
 			if ( isdigit( src.at(index) ) ){
 				lastIsNumber = true;
@@ -108,7 +114,7 @@ namespace PMES  {
 				tokens.push_back (token(TokenType::NUMBER , 0 , num));
 				continue;
 			}
-			if (index+1 < src.size() && src.at(index) == '-' && isdigit( src.at(index+1) && !lastIsNumber) ){
+			if (((index+1) < src.size()) && (src.at(index) == '-') && (isdigit( src.at(index+1))) && (!lastIsNumber) ){
 				lastIsNumber = true;
 				++index;
 				int64_t num = getNumber (src , &index);
@@ -129,6 +135,11 @@ namespace PMES  {
 					break;
 				case '/':
 					tokens.push_back (token(TokenType::OP_DIV, 2));
+					break;
+				case '^':
+					tokens.push_back (token(TokenType::OP_POW, 3));
+					break;
+				case ' ':
 					break;
 				default:
 					std::cout << "illegal character in Solver lex " << src.at(index) << "\n";
@@ -290,8 +301,10 @@ namespace PMES  {
 				return num1 * num2;
 			case TokenType::OP_DIV :
 				return num1 / num2;
+			case TokenType::OP_POW :
+				return pow( num1 , num2 );
 		}
-		std::cerr << "\033[31m serious error\033[0m\n";
+		std::cerr << "\033[31m unknown token in int64_t Solver::solve\033[0m\n";
 		return 0;
 	
 	}
@@ -299,16 +312,58 @@ namespace PMES  {
 		return solve (root);
 	}
 
+	int64_t Solver::parse (const std::string& src) {
+		tokens.clear();
+		this->lex (src);
+		this->build();
+		return this->solve ();
+	}
+
+	void Solver::clear () {
+		tokens.clear();
+		srcString.clear();
+	}
+
 
 };
 
 
+
+
+#include "PJsonParser/Pparser.h"
+#include <algorithm>
+void Test () {
+	namespace PJP = PJsonParser;
+
+	std::shared_ptr<PJP::JValue> V = PJP::parse ("Tests.json");
+	PJP::JValue& val = *V;
+
+	PMES::Solver solver("");
+	for (int i = 0;i < val.getAsArray()->size();++i) {
+		std::string str = val[i]["expression"].toString();
+		str.erase ( std::remove(str.begin() , str.end() , '\"') , str.end() );
+		int64_t value =  solver.parse (str);
+		
+		if (value == val[i]["answer"].getAsLong())
+			std::cout << "\033[32mPASSED TEST " << i << "\n\033[0m";
+		else
+			std::cout << "\033[31mFAILED TEST " << i << "\n\033[0m";	
+	}
+	
+
+}
+
 int main () {
-	PMES::Solver solver("10/2");
+#if 1 
+	Test();
+	return 0;
+#else
+	PMES::Solver solver("-3+10");
 	solver.lex();
-	//solver.printTokens();
+	solver.printTokens();
 	solver.build();
-	//solver.printTree ();
+	solver.printTree ();
 	std::cout << " = " << solver.solve() << "\n"; 
 	return 0;
+#endif
 }
