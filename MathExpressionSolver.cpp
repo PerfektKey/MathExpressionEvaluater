@@ -250,12 +250,15 @@ namespace PMES  {
 				root = operation;
 				previous_operator_priority = tok.priority;
 			} else if (previous_operator_priority == tok.priority) {
-				if (root_priority == tok.priority) {  // might have to tinker with this
+				if (root_priority == tok.priority) { // might have to tinker with this
 					operation->left = root;
 					root = operation;
 				} else if (root_priority < tok.priority) {
 					operation->left = root->right;
 					root->right = operation;
+				} else if (root_priority > tok.priority) {
+					operation->left = root;
+					root = operation;
 				}
 			
 			}else if (previous_operator_priority < tok.priority) {
@@ -354,11 +357,11 @@ void Test () {
 }
 
 int main () {
-#if 1 
+#if 0 
 	Test();
 	return 0;
 #else
-	PMES::Solver solver("-3+10");
+	PMES::Solver solver("6*3+2+3");
 	solver.lex();
 	solver.printTokens();
 	solver.build();
