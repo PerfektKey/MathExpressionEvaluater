@@ -83,7 +83,7 @@ namespace PMES  {
 		delete root;
 	}
 
-	int64_t Solver::getNumber (const std::string& src , uint32_t* ix) {
+	PMES::VALUE Solver::getNumber (const std::string& src , uint32_t* ix) {
 		std::string temp;
 
 		uint32_t& index = (*ix);
@@ -110,14 +110,14 @@ namespace PMES  {
 		while ( index < src.size() ) {
 			if ( isdigit( src.at(index) ) ){
 				lastIsNumber = true;
-				int64_t num = getNumber (src , &index);
+				PMES::VALUE num = getNumber (src , &index);
 				tokens.push_back (token(TokenType::NUMBER , 0 , num));
 				continue;
 			}
 			if (((index+1) < src.size()) && (src.at(index) == '-') && (isdigit( src.at(index+1))) && (!lastIsNumber) ){
 				lastIsNumber = true;
 				++index;
-				int64_t num = getNumber (src , &index);
+				PMES::VALUE num = getNumber (src , &index);
 				tokens.push_back (token(TokenType::NUMBER , 0 , num*-1));
 				continue;
 			}
@@ -138,6 +138,12 @@ namespace PMES  {
 					break;
 				case '^':
 					tokens.push_back (token(TokenType::OP_POW, 3));
+					break;
+				case '(':
+					tokens.push_back (token(TokenType::PARENT_OPENING, 4));
+					break;
+				case ')':
+					tokens.push_back (token(TokenType::PARENT_CLOSING, 4));
 					break;
 				case ' ':
 					break;
@@ -191,7 +197,9 @@ namespace PMES  {
 		/*  REFACTOR code: 
 		 *  	left is only useful in the first iteration so do refactor it so that it doesnt need it in the while loop
 		 */
-
+		std::cout << tokens.size() << "\n";
+		if (tokens.size() == 0)
+			return nullptr;
 		AST_Node* root = nullptr;
 		AST_Node* left = nullptr;
 		int16_t previous_operator_priority = -1; // has the last operators priority , -1 stands for the first iteration
@@ -205,6 +213,8 @@ namespace PMES  {
 			std::cerr << "the token that gave the error" << tok << "\033[0m\n";
 			exit (1);
 		}
+		if (tokens.size() == 0)
+			return left;
 		tok = eat();
 		root = new AST_Node(tok.type);
 		root->left = left;
@@ -219,11 +229,22 @@ namespace PMES  {
 		}
 		root->right = right;
 		left = right;// the next operatiors left is this operators right
-		
+		if (tokens.size() == 0)
+			return root;
+			
 		while ( !EOE() ) {
 			
 			// get the tokens from right to left
 			tok = eat();
+
+			if (tok.type == TokenType::PARENT_CLOSING) {
+				if (openParent)
+					return root;
+				else {
+					std::cout << "err\n";
+					exit (1);
+				}
+			}
 			
 
 			// now take care of the root
@@ -284,11 +305,11 @@ namespace PMES  {
 	}
 
 
-	int64_t Solver::solve (AST_Node* root) {
+	PMES::VALUE Solver::solve (AST_Node* root) {
 		if (root->type == TokenType::NUMBER)
 			return root->value;
-		int64_t num1 = solve (root->left);
-		int64_t num2 = solve (root->right);
+		PMES::VALUE num1 = solve (root->left);
+		PMES::VALUE num2 = solve (root->right);
 
 		switch (root->type) {
 			case TokenType::NUMBER:
@@ -307,15 +328,15 @@ namespace PMES  {
 			case TokenType::OP_POW :
 				return pow( num1 , num2 );
 		}
-		std::cerr << "\033[31m unknown token in int64_t Solver::solve\033[0m\n";
+		std::cerr << "\033[31m unknown token in PMES::VALUE Solver::solve\033[0m\n";
 		return 0;
 	
 	}
-	int64_t Solver::solve () {
+	PMES::VALUE Solver::solve () {
 		return solve (root);
 	}
 
-	int64_t Solver::parse (const std::string& src) {
+	PMES::VALUE Solver::parse (const std::string& src) {
 		tokens.clear();
 		this->lex (src);
 		this->build();
@@ -345,23 +366,26 @@ void Test () {
 	for (int i = 0;i < val.getAsArray()->size();++i) {
 		std::string str = val[i]["expression"].toString();
 		str.erase ( std::remove(str.begin() , str.end() , '\"') , str.end() );
-		int64_t value =  solver.parse (str);
+		PMES::VALUE value =  solver.parse (str);
 		
-		if (value == val[i]["answer"].getAsLong())
+		if (value == (PMES::VALUE)val[i]["answer"].getAsDouble())
 			std::cout << "\033[32mPASSED TEST " << i << "\n\033[0m";
 		else
-			std::cout << "\033[31mFAILED TEST " << i << "\n\033[0m";	
+			std::cout << "\033[31mFAILED TEST " << i << " expression: " << str << " expected " << val[i]["answer"].getAsLong() << " but got " << value  << "\n\033[0m";	
 	}
 	
 
 }
 
 int main () {
-#if 0 
+	std::cout << "double: " << sizeof(double) << "\n";
+	std::cout << "long: "   << sizeof(long  ) << "\n";
+	std::cout << "ld: " << sizeof(PMES::VALUE) << "\n";
+#if 0
 	Test();
 	return 0;
 #else
-	PMES::Solver solver("6*3+2+3");
+	PMES::Solver solver("10/3");
 	solver.lex();
 	solver.printTokens();
 	solver.build();

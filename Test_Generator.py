@@ -1,29 +1,26 @@
 import random
 
-def generate_random_expression():
-    operators = ['+', '-', '*']
-    operands = [str(num) for num in range(-100, 100)]
-    
-    expression = ''
-    
-    # Generate a random number of terms
-    num_terms = random.randint(10, 40)
-    
-    for i in range(num_terms):
-        # Randomly choose an operator
+def generate_expression(operators, operands, depth):
+    if depth == 0:
+        return str(random.choice(operands))
+    else:
         operator = random.choice(operators)
-        
-        # Randomly choose an operand
-        operand = random.choice(operands)
-        
-        # Append the operator and operand to the expression
-        expression += operand + ' ' + operator + ' '
-    
-    # Add the final operand
-    expression += random.choice(operands)
-    
-    return expression
+        if operator == '+':
+            return f"({generate_expression(operators, operands, depth-1)} {operator} {generate_expression(operators, operands, depth-1)})"
+        elif operator == '-':
+            return f"({generate_expression(operators, operands, depth-1)} {operator} {generate_expression(operators, operands, depth-1)})"
+        elif operator == '*':
+            return f"{generate_expression(operators, operands, depth-1)} {operator} {generate_expression(operators, operands, depth-1)}"
+        elif operator == '/':
+            return f"{generate_expression(operators, operands, depth-1)} {operator} {generate_expression(operators, operands, depth-1)}"
+        else:
+            raise ValueError("Invalid operator")
 
-# Generate a random math expression
-random_expression = generate_random_expression()
-print(random_expression)
+def generate_random_expression(min_value, max_value, depth):
+    operators = ['+', '-', '*', '/']
+    operands = list(range(min_value, max_value+1))
+    return generate_expression(operators, operands, depth)
+
+expression = generate_random_expression(1, 10, 3)
+print(expression)
+
