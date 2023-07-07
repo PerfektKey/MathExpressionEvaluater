@@ -1,8 +1,8 @@
 CC=clang++
-
+FLAGS=-std=c++20 -Wall -g
 
 all:
-	$(CC) -std=c++20 -Wall -o MER MathExpressionSolver.cpp PJsonParser/parser.cpp
-	./MER
-old:
-	$(CC) -std=c++20 -Wall -o OLD_MER MathExpressionResolver_OLD.cpp PJsonParser/parser.cpp
+
+Test:
+	$(CC) $(FLAGS) -o test tester.cpp src/MathExpressionSolver.cpp src/PJsonParser/parser.cpp
+

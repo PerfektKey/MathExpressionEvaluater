@@ -378,6 +378,7 @@ void Test () {
 
 }
 
+/*
 int main () {
 	std::cout << "double: " << sizeof(double) << "\n";
 	std::cout << "long: "   << sizeof(long  ) << "\n";
@@ -395,3 +396,4 @@ int main () {
 	return 0;
 #endif
 }
+*/
