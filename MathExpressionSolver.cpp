@@ -197,7 +197,6 @@ namespace PMES  {
 		/*  REFACTOR code: 
 		 *  	left is only useful in the first iteration so do refactor it so that it doesnt need it in the while loop
 		 */
-		std::cout << tokens.size() << "\n";
 		if (tokens.size() == 0)
 			return nullptr;
 		AST_Node* root = nullptr;
@@ -367,11 +366,13 @@ void Test () {
 		std::string str = val[i]["expression"].toString();
 		str.erase ( std::remove(str.begin() , str.end() , '\"') , str.end() );
 		PMES::VALUE value =  solver.parse (str);
-		
-		if (value == (PMES::VALUE)val[i]["answer"].getAsDouble())
+	
+		// fabs = float absolute value
+		// doing "fabs(float - float) < EPSILON" is a better way of ensurung equality for decimals	
+		if ( fabs(value - (PMES::VALUE)(val[i]["answer"].getAsDouble())) < 1e-5 )
 			std::cout << "\033[32mPASSED TEST " << i << "\n\033[0m";
 		else
-			std::cout << "\033[31mFAILED TEST " << i << " expression: " << str << " expected " << val[i]["answer"].getAsLong() << " but got " << value  << "\n\033[0m";	
+			std::cout << "\033[31mFAILED TEST " << i << " expression: " << str << " expected " << val[i]["answer"].getAsDouble() << " but got " << value  << "\n\033[0m";	
 	}
 	
 
@@ -381,7 +382,7 @@ int main () {
 	std::cout << "double: " << sizeof(double) << "\n";
 	std::cout << "long: "   << sizeof(long  ) << "\n";
 	std::cout << "ld: " << sizeof(PMES::VALUE) << "\n";
-#if 0
+#if 1
 	Test();
 	return 0;
 #else

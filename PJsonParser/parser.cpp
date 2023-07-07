@@ -197,7 +197,7 @@ namespace PJsonParser{
         return values.fValue;
     }
     long JValue::getAsLong(){
-        assertm(ObjectType::INT == type, "invalid return type");
+        assertm(ObjectType::INT == type , "invalid return type");
         return values.lValue;
     }
     bool JValue::getAsBool(){
