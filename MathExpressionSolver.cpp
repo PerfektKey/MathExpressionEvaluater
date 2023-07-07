@@ -88,12 +88,12 @@ namespace PMES  {
 
 		uint32_t& index = (*ix);
 
-		while ( index < src.size() && isdigit(src.at(index)) ) {
+		while ( index < src.size() && (isdigit(src.at(index)) || src.at(index) == '.') ) {
 			temp += src.at(index);
 			++(index);
 		}
 		//--(index);
-		return stoi (temp);
+		return stold (temp);
 	
 	}
 
@@ -385,7 +385,7 @@ int main () {
 	Test();
 	return 0;
 #else
-	PMES::Solver solver("10/3");
+	PMES::Solver solver("1.5 + 3.23");
 	solver.lex();
 	solver.printTokens();
 	solver.build();
