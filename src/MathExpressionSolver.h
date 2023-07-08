@@ -11,6 +11,17 @@ namespace PMES {
 
 	typedef long double VALUE;
 
+  // some error const that isVlalid returns
+  const uint8_t INVALID_CHARACTER     = 0b00000001;
+  const uint8_t INVALID_TOO_MANY_PC   = 0b00000010;
+  const uint8_t INVALID_TOO_MANY_PO   = 0b00000100;
+  const uint8_t INVALID_OP_AFTER_OP   = 0b00001000;
+  const uint8_t INVALID_NUM_AFTER_NUM = 0b00010000;
+  const uint8_t INVALID_PO_AFTER_NUM  = 0b00100000;
+  const uint8_t INVALID_PC_AFTER_OP   = 0b01000000;
+  const uint8_t INVALID_LAST_IS_OP    = 0b10000000;
+
+
 	enum class TokenType {
 		NUL=0,
 		
@@ -61,10 +72,11 @@ namespace PMES {
 
 	void printTabs (uint8_t);
 	void printAST (AST_Node*,uint8_t=0);
+	void deleteAST (AST_Node*);
 
 	class Solver {
 	public:
-		Solver (std::string);
+		Solver ();
 		~Solver();
 		void lex (std::string);// will change the string so not a const std::string:string&
 		void lex (); // cant pass default arguments so this
@@ -73,7 +85,7 @@ namespace PMES {
 		VALUE parse (const std::string&); 
 		void printTokens ();
 		void printTree ();
-
+	  uint32_t isValid (const std::string&);
 		void clear();
 		//void clearTokens();
 	private:

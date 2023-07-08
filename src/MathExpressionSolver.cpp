@@ -73,14 +73,28 @@ namespace PMES  {
 		printAST ( node->right , level+1 );
 
 	}
+
+	void deleteAST (AST_Node* node) {
+		if (node == nullptr)
+			return;
+		if (node->type == TokenType::NUMBER){
+			delete node;
+			node = nullptr;
+			return;
+		}
+
+		deleteAST (node->left);
+		deleteAST (node->right);
+		delete node;
+		node = nullptr;
+	}
 	
 
-	Solver::Solver (std::string src) {
-		this->srcString = src;
-		this->root = new AST_Node();
-	}
+	Solver::Solver () {
+	  root = nullptr;
+  }
 	Solver::~Solver () {
-		delete root;
+		deleteAST (root);
 	}
 
 	PMES::VALUE Solver::getNumber (const std::string& src , uint32_t* ix) {
@@ -342,58 +356,50 @@ namespace PMES  {
 		return this->solve ();
 	}
 
+	uint32_t Solver::isValid (const std::string& str) {
+		uint32_t err = 0;
+
+		this->clear();
+		this->lex(str);
+
+		bool lastIsOperator = false;
+		uint32_t openParents = 0;
+		for (uint32_t i = 0; i < tokens.size();++i) {
+			if ( tokens.at(i).type == TokenType::NUMBER ) {
+				if (!lastIsOperator)
+					err |= INVALID_NUM_AFTER_NUM;
+				lastIsOperator = false;
+			}else if ( tokens.at(i).type == TokenType::PARENT_OPENING ){
+				++openParents;
+				if (!lastIsOperator && i != 0)
+					err |= INVALID_NUM_AFTER_NUM;
+				lastIsOperator = true;
+			
+			}else if ( tokens.at(i).type == TokenType::PARENT_CLOSING ) {
+				if (openParents > 0)
+					--openParents;
+				else {
+					err |= INVALID_TOO_MANY_PC;
+					--openParents;
+				}
+			}else  {
+				if (lastIsOperator)
+					err |= INVALID_OP_AFTER_OP;
+				lastIsOperator = true;
+			}
+		}
+
+		if ( openParents > 0 )
+			err |= INVALID_TOO_MANY_PO;
+
+		return err;
+	}
+
 	void Solver::clear () {
 		tokens.clear();
 		srcString.clear();
+		deleteAST (root);
 	}
 
 
 };
-
-
-
-
-#include "PJsonParser/Pparser.h"
-#include <algorithm>
-void Test () {
-	namespace PJP = PJsonParser;
-
-	std::shared_ptr<PJP::JValue> V = PJP::parse ("Tests.json");
-	PJP::JValue& val = *V;
-
-	PMES::Solver solver("");
-	for (int i = 0;i < val.getAsArray()->size();++i) {
-		std::string str = val[i]["expression"].toString();
-		str.erase ( std::remove(str.begin() , str.end() , '\"') , str.end() );
-		PMES::VALUE value =  solver.parse (str);
-	
-		// fabs = float absolute value
-		// doing "fabs(float - float) < EPSILON" is a better way of ensurung equality for decimals	
-		if ( fabs(value - (PMES::VALUE)(val[i]["answer"].getAsDouble())) < 1e-5 )
-			std::cout << "\033[32mPASSED TEST " << i << "\n\033[0m";
-		else
-			std::cout << "\033[31mFAILED TEST " << i << " expression: " << str << " expected " << val[i]["answer"].getAsDouble() << " but got " << value  << "\n\033[0m";	
-	}
-	
-
-}
-
-/*
-int main () {
-	std::cout << "double: " << sizeof(double) << "\n";
-	std::cout << "long: "   << sizeof(long  ) << "\n";
-	std::cout << "ld: " << sizeof(PMES::VALUE) << "\n";
-#if 1
-	Test();
-	return 0;
-#else
-	PMES::Solver solver("1.5 + 3.23");
-	solver.lex();
-	solver.printTokens();
-	solver.build();
-	solver.printTree ();
-	std::cout << " = " << solver.solve() << "\n"; 
-	return 0;
-#endif
-}
-*/
